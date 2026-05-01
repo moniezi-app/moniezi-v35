@@ -1,6 +1,6 @@
-# package marker: moniezi-v35.0.0-pro-finance-fundraising-ready-baseline
+# package marker: moniezi-v35.0.1-android-identity-update-helper
 name: Deploy Vite app to GitHub Pages
-# package-revision: v35.0.0
+# package-revision: v35.0.1
 
 on:
   push:

@@ -774,7 +774,7 @@ class PageErrorBoundary extends React.Component<
   }
 }
 
-const CUSTOMER_VERSION = "35.0.0"; // v35.0.0: Pro Finance fundraising-ready baseline
+const CUSTOMER_VERSION = "35.0.1"; // v35.0.1: Android install identity + update helper
 const LICENSE_STORAGE_KEY = "moniezi_license_v1";
 const DEVICE_ID_STORAGE_KEY = "moniezi_device_id_v1";
 const OWNER_LICENSE_KEY = "vgkey";
@@ -1236,7 +1236,7 @@ export default function App() {
   const [duplicationHistory, setDuplicationHistory] = useState<Record<string, {originalId: string, originalDate: string}>>({});
   
   // Settings Tab State
-  const [settingsTab, setSettingsTab] = useState<'backup' | 'branding' | 'tax' | 'data' | 'license' | 'offline'>('backup');
+  const [settingsTab, setSettingsTab] = useState<'backup' | 'update' | 'branding' | 'tax' | 'data' | 'license' | 'offline'>('backup');
   const [expenseReceiptFilter, setExpenseReceiptFilter] = useState<'all' | 'with_receipts' | 'without_receipts'>('all');
   const [expenseReviewFilter, setExpenseReviewFilter] = useState<'all' | 'new' | 'reviewed'>('all');
 
@@ -3734,6 +3734,40 @@ const demoMileageTrips: MileageTrip[] = [
     showToast("All data has been wiped.", "success");
     setCurrentPage(Page.Dashboard);
   };
+
+  const handleCheckForAppUpdate = async () => {
+    try {
+      if (!("serviceWorker" in navigator)) {
+        showToast("App update check is not available in this browser.", "error");
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        showToast("No installed app service worker was found yet. Open the app once from the browser, then try again.", "error");
+        return;
+      }
+
+      await registration.update();
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: "SKIP_WAITING" });
+      }
+      showToast("Update check complete. Use Reload App if the screen still shows the old build.", "success");
+    } catch (error) {
+      console.error("Update check failed", error);
+      showToast("Update check failed. Try reloading from Chrome.", "error");
+    }
+  };
+
+  const handleReloadApp = () => {
+    window.location.reload();
+  };
+
+  const handleResetDemoDataOnly = async () => {
+    await handleSeedDemoData();
+    showToast("Demo data reset for this MONIEZI 35 build.", "success");
+  };
+
   const confirmDeleteInvoice = () => {
     if (!invoiceToDelete) return;
     const inv = invoices.find(i => i.id === invoiceToDelete);
@@ -5839,7 +5873,7 @@ const demoMileageTrips: MileageTrip[] = [
       const backup = {
         metadata: {
           appName: "MONIEZI",
-          version: "15.0.0-taxprep_backnav",
+          version: CUSTOMER_VERSION,
           schemaVersion: 1,
           timestamp: new Date().toISOString(),
         },
@@ -7942,7 +7976,7 @@ html, body, #root {
 
               {/* Reports Menu (like Settings) */}
               <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-2 shadow-sm mb-4">
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                <div className="grid grid-cols-3 md:grid-cols-7 gap-2">
                   <button
                     type="button"
                     onClick={() => scrollToReportSection('report-pl', 'pl')}
@@ -9724,7 +9758,7 @@ html, body, #root {
 
             {/* Tab Navigation */}
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-2 shadow-sm">
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 md:grid-cols-7 gap-2">
                 <button
                   onClick={() => setSettingsTab('backup')}
                   className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-3 rounded-lg font-bold text-xs md:text-sm uppercase tracking-wide transition-all ${
@@ -9735,6 +9769,18 @@ html, body, #root {
                 >
                   <Shield size={18} />
                   <span className="text-[10px] md:text-sm mt-0.5 md:mt-0">Backup</span>
+                </button>
+
+                <button
+                  onClick={() => setSettingsTab('update')}
+                  className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-3 rounded-lg font-bold text-xs md:text-sm uppercase tracking-wide transition-all ${
+                    settingsTab === 'update'
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <RotateCcw size={18} />
+                  <span className="text-[10px] md:text-sm mt-0.5 md:mt-0">Update</span>
                 </button>
                 
                 <button
@@ -9802,6 +9848,73 @@ html, body, #root {
             {/* Tab Content */}
             <div className="space-y-6">
               
+              {/* App Update / Refresh Build Tab */}
+              {settingsTab === 'update' && (
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 shadow-lg animate-in fade-in slide-in-from-bottom-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                      <RotateCcw size={20} strokeWidth={2} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white">App Update / Refresh Build</h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">Use this before clearing Chrome site data. It checks the installed build, reloads the app, and protects your local records with backup controls.</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <button
+                      onClick={handleCheckForAppUpdate}
+                      className="flex items-center justify-center gap-3 py-5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-100 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all font-bold text-sm uppercase tracking-wider active:scale-95"
+                    >
+                      <RotateCcw size={20} /> Check for Update
+                    </button>
+                    <button
+                      onClick={handleReloadApp}
+                      className="flex items-center justify-center gap-3 py-5 rounded-lg bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-900 hover:text-white hover:border-slate-900 dark:hover:bg-white dark:hover:text-slate-950 dark:hover:border-white transition-all font-bold text-sm uppercase tracking-wider active:scale-95"
+                    >
+                      <Repeat size={20} /> Reload App
+                    </button>
+                    <button
+                      onClick={handleResetDemoDataOnly}
+                      className="flex items-center justify-center gap-3 py-5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all font-bold text-sm uppercase tracking-wider active:scale-95"
+                    >
+                      <Sparkles size={20} /> Reset Demo Data Only
+                    </button>
+                    <button
+                      onClick={handleExportBackup}
+                      className="flex items-center justify-center gap-3 py-5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all font-bold text-sm uppercase tracking-wider active:scale-95"
+                    >
+                      <Download size={20} /> Export Backup
+                    </button>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center justify-center gap-3 py-5 rounded-lg bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 text-purple-900 dark:text-purple-100 hover:bg-purple-600 hover:text-white hover:border-purple-600 transition-all font-bold text-sm uppercase tracking-wider active:scale-95 sm:col-span-2"
+                    >
+                      <Upload size={20} /> Import Backup
+                    </button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImportBackup}
+                      className="hidden"
+                      accept=".json"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/10 p-4">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300 mb-1">Current Build</div>
+                      <div className="text-lg font-black text-slate-950 dark:text-white">MONIEZI Pro Finance V35</div>
+                      <div className="text-sm font-bold text-slate-700 dark:text-slate-200 mt-1">App version {CUSTOMER_VERSION}</div>
+                    </div>
+                    <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 p-4">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300 mb-1">Important</div>
+                      <p className="text-sm leading-6 text-amber-900 dark:text-amber-100">Export a backup before clearing Chrome site data. Browser site-data resets can remove local MONIEZI records on this device.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Offline Setup Tab */}
               {settingsTab === 'offline' && (
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 shadow-lg animate-in fade-in slide-in-from-bottom-4">

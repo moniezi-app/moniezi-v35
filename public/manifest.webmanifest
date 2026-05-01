@@ -1,7 +1,8 @@
 {
-  "name": "MONIEZI",
-  "short_name": "MONIEZI",
-  "description": "MONIEZI \u2014 simple, private finance tracker app",
+  "name": "MONIEZI Pro Finance V35",
+  "short_name": "MONIEZI 35",
+  "id": "/moniezi-pro-finance-v35/",
+  "description": "MONIEZI Pro Finance V35 \u2014 private finance, tax, and internal fundraising tracker app",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
